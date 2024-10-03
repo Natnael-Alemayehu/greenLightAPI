@@ -9,6 +9,7 @@ import (
 	"greenlight.natenine.com/internal/validator"
 )
 
+// POST /v1/movies
 func (app *application) createMovieHandler(w http.ResponseWriter, r *http.Request) {
 	var input struct {
 		Title   string       `json:"title"`
@@ -174,6 +175,7 @@ func (app *application) deleteMovieHandler(w http.ResponseWriter, r *http.Reques
 	}
 }
 
+// Search works like this => "GET /v1/movies?title=nameOfMovie"
 func (app *application) listMovieHandler(w http.ResponseWriter, r *http.Request) {
 	// To keep things consistent with our other handlers, we'll define an input struct to hold the expected values from the request query string.
 	var input struct {

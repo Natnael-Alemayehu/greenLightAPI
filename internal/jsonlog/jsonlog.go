@@ -48,20 +48,20 @@ func New(out io.Writer, minLevel Level) *Logger {
 	}
 }
 
-func (l Logger) PrintInfo(message string, properties map[string]string) {
+func (l *Logger) PrintInfo(message string, properties map[string]string) {
 	l.print(LevelInfo, message, properties)
 }
 
-func (l Logger) PrintError(err error, properties map[string]string) {
+func (l *Logger) PrintError(err error, properties map[string]string) {
 	l.print(LevelInfo, err.Error(), properties)
 }
 
-func (l Logger) PrintFatal(err error, properties map[string]string) {
+func (l *Logger) PrintFatal(err error, properties map[string]string) {
 	l.print(LevelInfo, err.Error(), properties)
 	os.Exit(1)
 }
 
-func (l Logger) print(level Level, message string, properties map[string]string) (int, error) {
+func (l *Logger) print(level Level, message string, properties map[string]string) (int, error) {
 	// If the severity level of the log entry is below the minimum severity for the logger, then return with no further action
 	if level < l.minLevel {
 		return 0, nil
@@ -97,6 +97,6 @@ func (l Logger) print(level Level, message string, properties map[string]string)
 	return l.out.Write(append(line, '\n'))
 }
 
-func (l Logger) Write(message []byte) (n int, err error) {
+func (l *Logger) Write(message []byte) (n int, err error) {
 	return l.print(LevelError, string(message), nil)
 }
