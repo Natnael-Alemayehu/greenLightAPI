@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"net/http"
+	"time"
 
 	"greenlight.natenine.com/internal/data"
 	"greenlight.natenine.com/internal/validator"
@@ -51,12 +52,30 @@ func (app *application) registerUserHandler(w http.ResponseWriter, r *http.Reque
 			app.failedValidationResponse(w, r, v.Errors)
 		default:
 			app.serveErrorResponse(w, r, err)
-
 		}
 		return
 	}
 
-	err = app.writeJSON(w, http.StatusCreated, envelope{"user": user}, nil)
+	token, err := app.models.Tokens.New(user.ID, 3*24*time.Hour, data.ScopeActivation)
+	if err != nil {
+		app.serveErrorResponse(w, r, err)
+		return
+	}
+
+	// Sending the email in another goroutine
+
+	app.background(func() {
+		data := map[string]any{
+			"activationToken": token.Plaintext,
+			"UserID":          user.ID,
+		}
+		err = app.mailer.Send(user.Email, "user_welcome.tmpl.html", data)
+		if err != nil {
+			app.logger.PrintError(err, nil)
+		}
+	})
+
+	err = app.writeJSON(w, http.StatusAccepted, envelope{"user": user}, nil)
 	if err != nil {
 		app.serveErrorResponse(w, r, err)
 	}

@@ -28,19 +28,30 @@ func (app *application) serve() error {
 	// Background routine to catch all SIGINT nad SIGTERM
 	go func() {
 		quit := make(chan os.Signal, 1)
-
 		signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-
 		s := <-quit
 
-		app.logger.PrintInfo("Shutting down the server", map[string]string{
+		app.logger.PrintInfo("Caught signal", map[string]string{
 			"signal": s.String(),
 		})
 
 		ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 		defer cancel()
 
-		shutdownError <- srv.Shutdown(ctx)
+		err := srv.Shutdown(ctx)
+		if err != nil {
+			shutdownError <- err
+		}
+
+		app.logger.PrintInfo("Completing background tasks", map[string]string{
+			"addr": srv.Addr,
+		})
+
+		// Call wait to block until the waitgroup counter is zero. Essentially blocking
+		// until the background goroutines have finished. Then we return nil on the shutdownError channel,
+		// to indicate the shutdown is completed without any issues.
+		app.wg.Wait()
+		shutdownError <- nil
 
 	}()
 
