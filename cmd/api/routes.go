@@ -14,15 +14,21 @@ func (app *application) routes() http.Handler {
 
 	router.HandlerFunc(http.MethodGet, "/v1/healthcheck", app.healthCheckHandler)
 
-	// Movie
-	router.HandlerFunc(http.MethodGet, "/v1/movies", app.listMovieHandler)
-	router.HandlerFunc(http.MethodPost, "/v1/movies", app.createMovieHandler)
-	router.HandlerFunc(http.MethodGet, "/v1/movies/:id", app.showMovieHandler)
-	router.HandlerFunc(http.MethodPatch, "/v1/movies/:id", app.updateMovieHandler)
-	router.HandlerFunc(http.MethodDelete, "/v1/movies/:id", app.deleteMovieHandler)
+	// Movie - Users that are not authenticated can not access these routes
+	router.HandlerFunc(http.MethodGet, "/v1/movies", app.requireAuthenticatedUser(app.listMovieHandler))
+	router.HandlerFunc(http.MethodPost, "/v1/movies", app.requireAuthenticatedUser(app.createMovieHandler))
+	router.HandlerFunc(http.MethodGet, "/v1/movies/:id", app.requireAuthenticatedUser(app.showMovieHandler))
+	router.HandlerFunc(http.MethodPatch, "/v1/movies/:id", app.requireAuthenticatedUser(app.updateMovieHandler))
+	router.HandlerFunc(http.MethodDelete, "/v1/movies/:id", app.requireAuthenticatedUser(app.deleteMovieHandler))
 
 	// User
 	router.HandlerFunc(http.MethodPost, "/v1/users", app.registerUserHandler)
 
-	return app.recoverPanic(app.rateLimiter(router))
+	// User activation
+	router.HandlerFunc(http.MethodPut, "/v1/users/activated", app.activateUserHandler)
+
+	// Authentication endpoint
+	router.HandlerFunc(http.MethodPost, "/v1/tokens/authentication", app.createAuthenticationTokenHandler)
+
+	return app.recoverPanic(app.rateLimiter(app.authenticate(router)))
 }
