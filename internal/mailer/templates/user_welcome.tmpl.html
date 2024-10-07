@@ -5,7 +5,7 @@ Hi,
 
 Thanks for signing up for a NateAPI account. We're excited to have you on board!
 
-for future reference, your user ID number is {{.ID}}.
+for future reference, your user ID number is {{.UserID}}.
 
 Please send a request to the `PUT /v1/users/activated` endpoint with the following JSON
 body to activate your account:
@@ -29,12 +29,12 @@ The NateAPI team
     <body>
         <p>Hi,</p>
         <p>Thanks for signing up for a NateAPI account. We're excited to have you on board!</p>
-        <p>For future reference, your user ID number is {{.ID}}.</p>
+        <p>For future reference, your user ID number is {{.UserID}}.</p>
         <p>Please send a request to the <code>PUT /v1/user/activated</code> endpoint with the following JSON body to
            activate your account: </p>
         <pre>
             <code>
-            {"token":{{.activationToken}}}
+            {"token":"{{.activationToken}}"}
             </code>
         </pre>
         <p>Thanks,</p>
