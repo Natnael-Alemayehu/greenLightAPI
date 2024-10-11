@@ -3,8 +3,10 @@ package main
 import (
 	"context"
 	"database/sql"
+	"expvar"
 	"flag"
 	"os"
+	"runtime"
 	"strings"
 	"sync"
 	"time"
@@ -96,6 +98,22 @@ func main() {
 
 	defer db.Close()
 
+	// Stats
+	expvar.NewString("Version").Set(version)
+
+	expvar.Publish("gorutines", expvar.Func(func() any {
+		// Returns the number of goroutines
+		return runtime.NumGoroutine()
+	}))
+
+	expvar.Publish("database", expvar.Func(func() any {
+		return db.Stats()
+	}))
+
+	expvar.Publish("timestamp", expvar.Func(func() any {
+		return time.Now().Unix()
+	}))
+
 	logger.PrintInfo("database connection pool established", nil)
 
 	app := application{
@@ -131,9 +149,7 @@ func openDB(cfg config) (*sql.DB, error) {
 	defer cancel()
 
 	// Use PingContext() to establish a new connection to the database, passing in the
-	// context we created above as a parameter. If the connection couldn't be
-	// established successfully within the 5 second deadline, then this will return an
-	// error.
+	// context we created above as a parameter.
 	err = db.PingContext(ctx)
 	if err != nil {
 		return nil, err

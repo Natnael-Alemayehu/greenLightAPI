@@ -2,9 +2,11 @@ package main
 
 import (
 	"errors"
+	"expvar"
 	"fmt"
 	"net"
 	"net/http"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -217,4 +219,60 @@ func (app *application) enableCors(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r)
 	})
 
+}
+
+// The code below is going to wrap around the reqeusts and get the status codes of each request
+type metricsResponseWriter struct {
+	wrapped       http.ResponseWriter
+	statusCode    int
+	headerWritten bool
+}
+
+func (mw *metricsResponseWriter) Header() http.Header {
+	return mw.wrapped.Header()
+}
+func (mw *metricsResponseWriter) WriteHeader(statusCode int) {
+	mw.wrapped.WriteHeader(statusCode)
+	if !mw.headerWritten {
+		mw.statusCode = statusCode
+		mw.headerWritten = true
+	}
+}
+func (mw *metricsResponseWriter) Write(b []byte) (int, error) {
+	if !mw.headerWritten {
+		mw.statusCode = http.StatusOK
+		mw.headerWritten = true
+	}
+	return mw.wrapped.Write(b)
+}
+func (mw *metricsResponseWriter) Unwrap() http.ResponseWriter {
+	return mw.wrapped
+}
+
+func (app *application) metrics(next http.Handler) http.Handler {
+	var (
+		totalRequestsReceived           = expvar.NewInt("total_requests_received")
+		totalResponsesSent              = expvar.NewInt("total_response_sent")
+		totalProcessingTimeMicroseconds = expvar.NewInt("total_processing_time_μs")
+		totalResponseSentByStatus       = expvar.NewMap("total_responses_sent_by_status")
+	)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+
+		totalRequestsReceived.Add(1)
+
+		mw := &metricsResponseWriter{wrapped: w}
+
+		// Call the next handler in the chain.
+		next.ServeHTTP(mw, r)
+
+		// On the way back up the middleware chain, increment the number of responses sent by 1
+		totalResponsesSent.Add(1)
+
+		totalResponseSentByStatus.Add(strconv.Itoa(mw.statusCode), 1)
+
+		duration := time.Since(start).Microseconds()
+		totalProcessingTimeMicroseconds.Add(duration)
+
+	})
 }
