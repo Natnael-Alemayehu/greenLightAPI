@@ -15,11 +15,12 @@ import (
 	"greenlight.natenine.com/internal/data"
 	"greenlight.natenine.com/internal/jsonlog"
 	"greenlight.natenine.com/internal/mailer"
+	"greenlight.natenine.com/internal/vcs"
 
 	_ "github.com/lib/pq"
 )
 
-const version = "1.0.0"
+var version = vcs.Version()
 
 type config struct {
 	port int
