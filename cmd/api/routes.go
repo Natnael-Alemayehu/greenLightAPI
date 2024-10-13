@@ -28,8 +28,12 @@ func (app *application) routes() http.Handler {
 	// User activation
 	router.HandlerFunc(http.MethodPut, "/v1/users/activated", app.activateUserHandler)
 
+	router.HandlerFunc(http.MethodPut, "/v1/users/password", app.updateUserPasswordHander)
+
 	// Authentication endpoint
 	router.HandlerFunc(http.MethodPost, "/v1/tokens/authentication", app.createAuthenticationTokenHandler)
+
+	router.HandlerFunc(http.MethodPost, "/v1/tokens/password-reset", app.createPasswordResetTokenHandler)
 
 	// Metrics Endpoint
 	router.Handler(http.MethodGet, "/debug/vars", expvar.Handler())
